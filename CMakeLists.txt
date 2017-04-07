@@ -5,8 +5,8 @@ project(lane_detection)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
-  opencv2
+  # cv_bridge
+  # opencv2
   roscpp
   rospy
   sensor_msgs

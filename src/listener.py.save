@@ -9,40 +9,31 @@ import time
 import atexit
 import RPi.GPIO as GPIO
 
-I=0
-last_error = 0
-def calcPID(error, Kp, Ki, Kd):
-       	global last_error
- 	global I
-#	        I = 0
-       	P = error
-       	if P > 100:
-               	P = 100
-       	elif P < -100:
-               	P = -100
-
-        I = I + error
-#        if I > 500 or I < -500:
-	if I > 300:
-		I = 300
-#			if error < 10 and error > -10:
-#				I = I - I/2
-	elif I < -300:
-		I = -300
-#			if error < 10 and error > -10:
-#				I = I - I/2
-	if error < 10 and error > -10:
-		I = I - I/2         
-#		if error < 10 and error > -10 :
- #               	I = I - I/2
-
-	D = error - last_error
-	PID = int(Kp*P + Ki*I + Kd*D)
-	last_error = error
-
-	return PID
-
 class lane_detection:
+
+	last_error = 0
+
+	def calcPID(error, Kp, Kd, Ki):
+        	global last_error
+       		global I
+#	        I = 0
+        	P = error
+        	if P > 100:
+                	P = 100
+        	elif P < -100:
+                	P = -100
+
+	        I = I + error
+	        if I > 500:
+	                I = 500
+	        elif I < -500:
+	                I = -500
+
+		D = error - last_error
+		PID = Kp*P + Ki*I + Kd*D
+		last_error = error
+		
+		return PID
 		
 	def __init__(self):
 
@@ -65,7 +56,7 @@ class lane_detection:
 
 		#setup motors' speed
 		self.speed = 120
-		self.motorBalance = -3#3
+		self.motorBalance = -3
 		self.m1.setSpeed(self.speed + self.motorBalance) #left motor
 		self.m2.setSpeed(self.speed) #right motor
 
@@ -87,43 +78,38 @@ class lane_detection:
 		input = data.data
 		self.m1.setSpeed(self.speed + self.motorBalance)
 		self.m2.setSpeed(self.speed)
-
-		PID = calcPID(input,0.5,0.0005,0.005)
-
 		if input == 0:
 			self.m1.run(Adafruit_MotorHAT.FORWARD)
                         self.m2.run(Adafruit_MotorHAT.FORWARD)
 			rospy.loginfo("Forward")
 		elif(input > 0 and input < 150):
+			PID = calcPID(input,
 	                self.m1.run(Adafruit_MotorHAT.FORWARD)
         	        self.m2.run(Adafruit_MotorHAT.FORWARD)
-#			if (PID > 25):
-#				PID = 25
-			self.m1.setSpeed(self.speed+self.motorBalance+PID)
-			rospy.loginfo(PID)
+			if (input > 25):
+				input = 25
+				self.m1.setSpeed(self.speed+self.motorBalance+input)
+			rospy.loginfo(input)
 		elif(input < 0):
 	                self.m1.run(Adafruit_MotorHAT.FORWARD)
         	        self.m2.run(Adafruit_MotorHAT.FORWARD)
-#			if (input < -25):
-#				input = -25
-			self.m2.setSpeed(self.speed-PID)
-			rospy.loginfo(PID)
+			if (input < -25):
+				input = -25
+			self.m2.setSpeed(self.speed-input)
+			rospy.loginfo(input)
 		elif(input == 152):
 			self.m1.run(Adafruit_MotorHAT.FORWARD)
                         self.m2.run(Adafruit_MotorHAT.FORWARD)
-                        self.m2.setSpeed(self.speed-60)	#55
+                        self.m2.setSpeed(self.speed-50)	
 #			self.m2.setSpeed(self.speed-20)		
 		elif(input == 153):
 			self.m1.run(Adafruit_MotorHAT.FORWARD)
                         self.m2.run(Adafruit_MotorHAT.FORWARD)
-                        self.m1.setSpeed(self.speed-60)
+                        self.m1.setSpeed(self.speed-50)
 #			self.m1.setSpeed(self.speed-20)
 		elif(input == 154):
-#			self.m1.run(Adafruit_MotorHAT.RELEASE)
-#			self.m2.run(Adafruit_MotorHAT.RELEASE)
-			time.sleep(0.5)
-                        self.m1.run(Adafruit_MotorHAT.RELEASE)
-                        self.m2.run(Adafruit_MotorHAT.RELEASE)
+			self.m1.run(Adafruit_MotorHAT.FORWARD)
+			self.m2.run(Adafruit_MotorHAT.FORWARD)
 		elif(input == 155):
 			self.m1.run(Adafruit_MotorHAT.RELEASE)
 			self.m2.run(Adafruit_MotorHAT.RELEASE)

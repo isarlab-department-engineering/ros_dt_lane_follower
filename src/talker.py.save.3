@@ -15,6 +15,7 @@ from picamera.array import PiRGBArray
 import time
 import numpy as np
 import RPi.GPIO as GPIO
+#import matplotlib.pyplot as plt
 
 last_error = 0
 I = 0
@@ -69,6 +70,9 @@ def calculatePD(error, Kp, Kd, Ki):
 #	return PID
 
 def detect(img):
+	#init time
+#	start_time = time.time()
+	start_time = cv2.getTickCount()
 	# Gaussian Filter to remove noise
 	img = cv2.medianBlur(img,5)
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
@@ -86,6 +90,7 @@ def detect(img):
 
 	first_right_roi_mask = np.zeros(gray.shape,dtype=np.uint8)
 	first_right_roi_mask[rows/3:rows,220:360] = 255
+	right_roi = cv2.bitwise_and(img,img,first_right_roi_mask)
 
 	first_left_roi_mask = np.zeros(gray.shape,dtype=np.uint8)
 	first_left_roi_mask[rows/3:rows,0:180] = 255
@@ -107,22 +112,22 @@ def detect(img):
 	white_mask = cv2.erode(white_mask, None, iterations=2)
 	white_mask = cv2.dilate(white_mask, None, iterations=2)
 	
-	lower_red = np.array([0,240,200])
-	upper_red = np.array([0,255,200])
+	lower_red = np.array([150,70,50])
+	upper_red = np.array([200,255,255])
 
 	red_mask = cv2.inRange(hsv,lower_red,upper_red)
 	red_mask = cv2.erode(red_mask, None, iterations=2)
 	red_mask = cv2.dilate(red_mask, None, iterations=2)
 
-	lower_yellow = np.array([5,0,0]) #0,100,100
-	upper_yellow = np.array([50,255,255]) #80,255,255
+	lower_yellow = np.array([10,100,100]) #0,100,100
+	upper_yellow = np.array([30,255,255]) #80,255,255
 
 	yellow_mask = cv2.inRange(hsv,lower_yellow,upper_yellow)
 	yellow_mask = cv2.erode(yellow_mask, None, iterations=2)
 	yellow_mask = cv2.dilate(yellow_mask, None, iterations=2)
 
 	# mask AND original img
-	whitehsvthresh = cv2.bitwise_and(street,street,mask=white_mask)
+	whitehsvthresh = cv2.bitwise_and(right_roi,right_roi,mask=white_mask)
 	yellowhsvthresh = cv2.bitwise_and(street,street,mask=yellow_mask)
 	redhsvthresh = cv2.bitwise_and(street,street,mask=red_mask)
 
@@ -136,8 +141,8 @@ def detect(img):
 #        second_right_edges = cv2.bitwise_and(right_edges,second_right_roi_mask)
 #        second_left_edges = cv2.bitwise_and(left_edges,second_left_roi_mask)
 
-	red_edges = cv2.Canny(redhsvthresh,100,200)
-	red_edges = cv2.bitwise_and(red_edges,stop_roi_mask)
+	red_edges_hsv = cv2.Canny(redhsvthresh,100,200)
+	red_edges = cv2.bitwise_and(red_edges_hsv,stop_roi_mask)
 	
 	# Probabilistic Hough Transform
 #	minLength=50
@@ -274,7 +279,7 @@ def detect(img):
 	# Standard Hough Transform
 	right_lines = cv2.HoughLines(first_right_edges,0.8,np.pi/180,40)
 	left_lines = cv2.HoughLines(first_left_edges,0.8,np.pi/180,35)
-	red_lines = cv2.HoughLines(red_edges,1,np.pi/180,40)
+	red_lines = cv2.HoughLines(red_edges,1,np.pi/180,30)
 	
 #	second_right_lines = cv2.HoughLines(second_right_edges,1,np.pi/180,30)
 #        second_left_lines = cv2.HoughLines(second_left_edges,1,np.pi/180,30)
@@ -419,6 +424,7 @@ def detect(img):
 	# Draw red lines
 	if red_lines is not None:
 		red_lines = np.array(red_lines[0])
+		rospy.loginfo("Linea rossa")
 		for rho, theta in red_lines:
 			a=np.cos(theta)
                         b=np.sin(theta)
@@ -428,6 +434,8 @@ def detect(img):
                         y1=int(y0+1000*(a))
                         x2=int(x0-1000*(-b))
                         y2=int(y0-1000*(a))
+			
+			cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
 
 #	rospy.loginfo(kr_1)
 #	rospy.loginfo(kl_1)
@@ -437,11 +445,19 @@ def detect(img):
         kr = kr_1
 
 	error = kr - kl
-        PID = (calculatePD(error,0.5,0,0.05))/1
+#        PID = (calculatePD(error,0.5,0,0))/1
+
+	#end time
+#	end_time = time.time()
+	end_time = cv2.getTickCount()
+
+#	time_count = end_time - start_time
+	time_count= (end_time - start_time) / cv2.getTickFrequency()
+#	rospy.loginfo(time_count)
 
 	if red_lines is not None:
-		rospy.loginfo("Stop")
-		return 151 #stop
+		rospy.loginfo("STOP")
+		return 154 #stop
 	elif right_lines is not None and left_lines is not None:
 #		kr=0
 #		kl=0
@@ -461,8 +477,13 @@ def detect(img):
 #		rospy.loginfo(I)
 #		rospy.loginfo(PD)
 #		rospy.loginfo(last_error)
+		if error > 150:
+			error = 150
+		elif error < -150:
+			error = -150
 
-		return PID
+		return error
+
 	elif left_lines is not None and right_lines is None:
 		rospy.loginfo("Turn Right")
 		rospy.loginfo(kl_1)
@@ -622,7 +643,7 @@ def detect(img):
 #	return "x"
 
 def talker():
-	pub = rospy.Publisher('lane_detection', Int32, queue_size=10)
+				pub = rospy.Publisher('lane_detection', Int32, queue_size=10)
 	rospy.init_node('talker',anonymous=True)
 
 	camera = PiCamera() # Raspberry Pi Camera

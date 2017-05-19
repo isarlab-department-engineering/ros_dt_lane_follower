@@ -305,7 +305,7 @@ def detect(img):
 		return 155 #no line found
 
 def lane_detection():
-	pub = rospy.Publisher('ros-lane-detection', Int32, queue_size=10)
+	pub = rospy.Publisher('lane_detection', Int32, queue_size=10) #ros-lane-detection
 	rospy.init_node('lane-detection',anonymous=True)
 
 	camera = PiCamera() # Raspberry Pi Camera

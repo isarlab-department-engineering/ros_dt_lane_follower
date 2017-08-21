@@ -2,13 +2,19 @@
 from __future__ import print_function
 import rospy, sys, cv2
 import numpy as np
-from std_msgs.msg import Int32MultiArray, Int32
+from geometry_msgs.msg import Twist
+from std_msgs.msg import Int32
 
 I = 0
 last_error = 0
-array = Int32MultiArray()
-array.data = []
-pub = rospy.Publisher("follow_topic",Int32MultiArray,queue_size=1)
+twistMessage = Twist()
+twistMessage.linear.x = 0
+twistMessage.linear.y = 0
+twistMessage.linear.z = 0
+twistMessage.angular.x = 0
+twistMessage.angular.y = 0
+twistMessage.angular.z = 0
+pub = rospy.Publisher("follow_topic",Twist,queue_size=1)
 
 def calculatePID(error,Kp,Ki,Kd):
 	global last_error, I
@@ -38,15 +44,18 @@ def calculatePID(error,Kp,Ki,Kd):
 	return PID
 	
 def turnOffMotors():
-	array.data = [0,0,0,0]
-	pub.publish(array)
+	# DEBUG VERSION TO FIX
+	twistMessage.linear.x = 0
+	twistMessage.linear.y = 0
+	pub.publish(twistMessage)
 
 def setSpeed(speed1,speed2):
 	if speed1 == 0 and speed2 == 0:
 		turnOffMotors()
 	else:
-		array.data = [speed1,speed2,0,0]
-		pub.publish(array)
+		twistMessage.linear.x = speed1
+		twistMessage.linear.y = speed2
+		pub.publish(twistMessage)
 
 def callback(data):
 

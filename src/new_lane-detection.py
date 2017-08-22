@@ -2,12 +2,13 @@
 import roslib,rospy,sys,cv2,time
 import numpy as np
 roslib.load_manifest('lane_detection')
-from __future__ import print_function
+# from __future__ import print_function
 from std_msgs.msg import Int32
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 bridge = CvBridge()
+pub = rospy.Publisher('lane_detection', Int32, queue_size=10) #ros-lane-detection
 
 def callback(data):
 
@@ -174,7 +175,6 @@ def callback(data):
 
 def lane_detection():
 	rospy.init_node('lane-detection',anonymous=True)
-	pub = rospy.Publisher('lane_detection', Int32, queue_size=10) #ros-lane-detection
 	rospy.Subscriber("image_topic",Image,callback)
 	try:
 		rospy.loginfo("Enetering ROS Spin")

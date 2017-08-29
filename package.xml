@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>lane_detection</name>
+  <name>lane_follower</name>
   <version>0.0.0</version>
   <description>The lane_detection package</description>
 

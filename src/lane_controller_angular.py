@@ -18,7 +18,7 @@ pub = rospy.Publisher("follow_topic",Twist,queue_size=1)
 
 def calculatePID(error,Kp,Ki,Kd):
 	global last_error, I
-	
+#	
 	P = error
 	if P > 100:
 		P = 100
@@ -46,40 +46,49 @@ def calculatePID(error,Kp,Ki,Kd):
 def turnOffMotors():
 	# DEBUG VERSION TO FIX
 	twistMessage.linear.x = 0
-	twistMessage.linear.y = 0
+	twistMessage.angular.z = 0
 	pub.publish(twistMessage)
 
-def setSpeed(speed1,speed2):
-	if speed1 == 0 and speed2 == 0:
+def setSpeed(linear_speed,angular_speed):
+	if linear_speed == 0 and angular_speed == 0:
 		turnOffMotors()
 	else:
-		twistMessage.linear.x = speed1
-		twistMessage.linear.y = speed2
+		twistMessage.linear.x = linear_speed
+		twistMessage.linear.y = 0
+		twistMessage.linear.z = 0
+		twistMessage.angular.x = 0
+		twistMessage.angular.y = 0
+		twistMessage.angular.z = angular_speed
+
 		pub.publish(twistMessage)
 
 def callback(data):
 
 	error = data.data
-	speed2 = 120
-	motorBalance = -3
-	speed1 = speed2 + motorBalance
+#	speed2 = 120
+	linear_speed = 100
+#	motorBalance = -3
+#	speed1 = speed2 + motorBalance
 
-	PID = calculatePID(error,0.5,0.0005,0.005)
+#	PID = calculatePID(error,0.05,0.0005,0.005)
+	PID = calculatePID(error,0.01,0,0)
+#	print(error)
+	print(PID)
 
 	if error == 0:
-		setSpeed(speed1,speed2)
+		setSpeed(linear_speed,0)
 
 	elif (error > 0 and error < 150):
-		setSpeed(speed1+PID,speed2)
+		setSpeed(linear_speed,PID)
 
 	elif (error < 0):
-		setSpeed(speed1,speed2-PID)
+		setSpeed(linear_speed,-PID)
 
 	elif error == 152:
-		setSpeed(speed1,speed2-speed2/2)
+		setSpeed(linear_speed,5)
 
 	elif error == 153:
-		setSpeed(speed1-speed1/2,speed2)
+		setSpeed(linear_speed,-5)
 
 	else:
 		if error == 154:

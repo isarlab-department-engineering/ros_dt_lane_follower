@@ -91,7 +91,7 @@ class lane_detection:
 		self.m2.setSpeed(self.speed)
 
 		PID = calcPID(input,0.5,0.0005,0.005)
-
+		print(PID)
 		if input == 0:
 			self.m1.run(Adafruit_MotorHAT.FORWARD)
                         self.m2.run(Adafruit_MotorHAT.FORWARD)
@@ -113,12 +113,12 @@ class lane_detection:
 		elif(input == 152):
 			self.m1.run(Adafruit_MotorHAT.FORWARD)
                         self.m2.run(Adafruit_MotorHAT.FORWARD)
-                        self.m2.setSpeed(self.speed-60)	#55
+                        self.m2.setSpeed(self.speed/2)	#55
 #			self.m2.setSpeed(self.speed-20)		
 		elif(input == 153):
 			self.m1.run(Adafruit_MotorHAT.FORWARD)
                         self.m2.run(Adafruit_MotorHAT.FORWARD)
-                        self.m1.setSpeed(self.speed-60)
+                        self.m1.setSpeed(self.speed/2)
 #			self.m1.setSpeed(self.speed-20)
 		elif(input == 154):
 #			self.m1.run(Adafruit_MotorHAT.RELEASE)

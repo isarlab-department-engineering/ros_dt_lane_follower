@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import roslib,rospy,sys,cv2,time
 import numpy as np
-roslib.load_manifest('lane_detection')
+roslib.load_manifest('lane_follower')
 # from __future__ import print_function
 from std_msgs.msg import Int32
 from sensor_msgs.msg import Image
@@ -31,20 +31,20 @@ def callback(data):
 	street = cv2.bitwise_and(img,roi_mask)
 
 	stop_roi_mask = np.zeros(gray.shape,dtype=np.uint8)
-	stop_roi_mask[100:rows,150:250] = 255
+	stop_roi_mask[150:rows,150:250] = 255
 
 	right_roi_mask = np.zeros(gray.shape,dtype=np.uint8)
-	right_roi_mask[rows/3:rows,220:360] = 255
+	right_roi_mask[150:rows,200:360] = 255
 	right_roi = cv2.bitwise_and(img,img,right_roi_mask)
 
 	left_roi_mask = np.zeros(gray.shape,dtype=np.uint8)
-	left_roi_mask[rows/3:rows,0:180] = 255
+	left_roi_mask[150:rows,0:200] = 255
 	left_roi = cv2.bitwise_and(img,img,left_roi_mask)
 
 	# define range of color in HSV
 	hsv = cv2.cvtColor(street,cv2.COLOR_BGR2HSV)
 
-	sensitivity = 60 # range of sensitivity=[90,150]
+	sensitivity = 120 # range of sensitivity=[90,150]
 	lower_white = np.array([0,0,255-sensitivity])
 	upper_white = np.array([255,sensitivity,255])
 
@@ -52,15 +52,24 @@ def callback(data):
 	white_mask = cv2.erode(white_mask, None, iterations=2)
 	white_mask = cv2.dilate(white_mask, None, iterations=2)
 	
-	lower_red = np.array([150,70,50])
-	upper_red = np.array([200,255,255])
+        lower_red = np.array([150,70,50])#150
+        upper_red = np.array([200,255,255])
 
-	red_mask = cv2.inRange(hsv,lower_red,upper_red)
-	red_mask = cv2.erode(red_mask, None, iterations=2)
-	red_mask = cv2.dilate(red_mask, None, iterations=2)
+        lower_red2 = np.array([0,100,100])
+        upper_red2 = np.array([9,255,255])#10
 
-	lower_yellow = np.array([10,100,100]) #0,100,100
-	upper_yellow = np.array([30,255,255]) #80,255,255
+        red_mask1 = cv2.inRange(hsv,lower_red,upper_red)
+        red_mask1 = cv2.erode(red_mask1, None, iterations=2)
+        red_mask1 = cv2.dilate(red_mask1, None, iterations=2)
+
+        red_mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+        red_mask2 = cv2.erode(red_mask2, None, iterations=2)
+        red_mask2 = cv2.dilate(red_mask2, None, iterations=2)
+
+        red_mask = cv2.bitwise_or(red_mask1,red_mask2)
+
+	lower_yellow = np.array([11,100,100]) #0,100,100
+	upper_yellow = np.array([40,255,255]) #30,255,255
 
 	yellow_mask = cv2.inRange(hsv,lower_yellow,upper_yellow)
 	yellow_mask = cv2.erode(yellow_mask, None, iterations=2)
@@ -69,7 +78,7 @@ def callback(data):
 	# mask AND original img
 	whitehsvthresh = cv2.bitwise_and(right_roi,right_roi,mask=white_mask)
 	yellowhsvthresh = cv2.bitwise_and(street,street,mask=yellow_mask)
-	redhsvthresh = cv2.bitwise_and(street,street,mask=red_mask)
+	redhsvthresh = cv2.bitwise_and(street,street,mask=red_mask1)
 
 	# Canny Edge Detection 
 	right_edges = cv2.Canny(whitehsvthresh,100,200)
@@ -82,9 +91,9 @@ def callback(data):
 	red_edges = cv2.bitwise_and(red_edges_hsv,stop_roi_mask)
 	
 	# Standard Hough Transform
-	right_lines = cv2.HoughLines(right_edges,0.8,np.pi/180,40)
-	left_lines = cv2.HoughLines(left_edges,0.8,np.pi/180,35)
-	red_lines = cv2.HoughLines(red_edges,1,np.pi/180,30)
+	right_lines = cv2.HoughLines(right_edges,0.8,np.pi/180,35)
+	left_lines = cv2.HoughLines(left_edges,0.8,np.pi/180,30)
+	red_lines = cv2.HoughLines(red_edges,1,np.pi/180,40)
 	
 	xm = cols/2
 	ym = rows
@@ -175,7 +184,7 @@ def callback(data):
 
 def lane_detection():
 	rospy.init_node('lane-detection',anonymous=True)
-	rospy.Subscriber("image_topic",Image,callback)
+	rospy.Subscriber("image_topic",Image,callback,queue_size=1,buff_size=2**24)
 	try:
 		rospy.loginfo("Enetering ROS Spin")
 		rospy.spin()

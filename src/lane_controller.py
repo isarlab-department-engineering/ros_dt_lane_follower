@@ -41,7 +41,8 @@ def calculatePID(error,Kp,Ki,Kd):
 
 	last_error = error
 	
-return PID
+	return PID
+
 def turnOffMotors():
 	# DEBUG VERSION TO FIX
 	twistMessage.linear.x = 0
@@ -63,7 +64,8 @@ def callback(data):
 	motorBalance = -3
 	speed1 = speed2 + motorBalance
 
-	PID = calculatePID(error,0.5,0.0005,0.005)
+	PID = calculatePID(error,0.6,0.0005,0.005)
+#	rospy.loginfo(error)
 
 	if error == 0:
 		setSpeed(speed1,speed2)
@@ -75,10 +77,12 @@ def callback(data):
 		setSpeed(speed1,speed2-PID)
 
 	elif error == 152:
-		setSpeed(speed1,speed2-speed2/2)
+		setSpeed(speed1,speed2/2)
+#		setSpeed(speed1,70)
 
 	elif error == 153:
-		setSpeed(speed1-speed1/2,speed2)
+		setSpeed(speed1/2,speed2)
+#		setSpeed(70,speed2)
 
 	else:
 		if error == 154:
@@ -94,4 +98,4 @@ def lane_controller():
 		print("Shutting down")
 
 if __name__ == '__main__':
-lane_controller()
+	lane_controller()

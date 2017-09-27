@@ -71,7 +71,7 @@ def callback(data):
 #	speed1 = speed2 + motorBalance
 
 #	PID = calculatePID(error,0.05,0.0005,0.005)
-	PID = calculatePID(error,0.01,0,0)
+	PID = calculatePID(error,0.5,0,0)
 #	print(error)
 	print(PID)
 

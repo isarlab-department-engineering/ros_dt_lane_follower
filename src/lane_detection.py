@@ -51,7 +51,7 @@ def callback(data):
 	white_mask = cv2.inRange(hsv,lower_white,upper_white)
 	white_mask = cv2.erode(white_mask, None, iterations=2)
 	white_mask = cv2.dilate(white_mask, None, iterations=2)
-	
+
         lower_red = np.array([150,70,50])#150
         upper_red = np.array([200,255,255])
 
@@ -68,7 +68,7 @@ def callback(data):
 
         red_mask = cv2.bitwise_or(red_mask1,red_mask2)
 
-	lower_yellow = np.array([11,100,100]) #0,100,100
+	lower_yellow = np.array([0,100,100]) #0,100,100
 	upper_yellow = np.array([40,255,255]) #30,255,255
 
 	yellow_mask = cv2.inRange(hsv,lower_yellow,upper_yellow)

@@ -4,6 +4,15 @@ import rospy, sys, cv2, time
 import numpy as np
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Int32
+from master_node.msg import *
+from master_node.srv import *
+
+#impostare il nome del nodo coerente con quello del master
+id_node = "lane"
+
+#impistare la risposta positiva
+positive_answ = 1
+
 
 I = 0
 last_error = 0
@@ -14,7 +23,17 @@ twistMessage.linear.z = 0
 twistMessage.angular.x = 0
 twistMessage.angular.y = 0
 twistMessage.angular.z = 0
-pub = rospy.Publisher("follow_topic",Twist,queue_size=1)
+
+followmessage = Follow()
+
+followmessage.id = id_node
+
+lock = False
+
+
+pub = rospy.Publisher("follow_topic",Follow,queue_size=1)
+request_lock_service = rospy.ServiceProxy('request_lock', RequestLockService)
+
 
 def calculatePID(error,Kp,Ki,Kd):
 	global last_error, I
@@ -47,24 +66,26 @@ def turnOffMotors():
 	# DEBUG VERSION TO FIX
 	twistMessage.linear.x = 0
 	twistMessage.linear.y = 0
-	pub.publish(twistMessage)
-
+	followmessage.twist = twistMessage
+	pub.publish(followmessage)
+	
 def setSpeed(speed1,speed2):
 	if speed1 == 0 and speed2 == 0:
 		turnOffMotors()
 	else:
 		twistMessage.linear.x = speed1
 		twistMessage.linear.y = speed2
-		pub.publish(twistMessage)
+		followmessage.twist = twistMessage
+		pub.publish(followmessage)
 
 def callback(data):
 
 	error = data.data
-	speed2 = 120
-	motorBalance = -3
+	speed2 = 100
+	motorBalance = 10
 	speed1 = speed2 + motorBalance
 
-	PID = calculatePID(error,0.6,0.0005,0.005)
+	PID = calculatePID(error,0.5,0.0005,0.005)
 #	rospy.loginfo(error)
 
 	if error == 0:
@@ -77,11 +98,11 @@ def callback(data):
 		setSpeed(speed1,speed2-PID)
 
 	elif error == 152:
-		setSpeed(speed1,speed2/2)
+		setSpeed(speed1,60)
 #		setSpeed(speed1,70)
 
 	elif error == 153:
-		setSpeed(speed1/2,speed2)
+		setSpeed(60,speed2)
 #		setSpeed(70,speed2)
 
 	else:
@@ -91,11 +112,48 @@ def callback(data):
 
 def lane_controller():
 	rospy.init_node('lane_controller', anonymous=True)
-	rospy.Subscriber('lane_detection', Int32, callback)
+
+	#Sottoscrizione al topic shared
+	rospy.Subscriber("lock_shared",Lock,checkMessage)
+
+
+	rospy.Subscriber('lane_detection', Int32, requestLock)
 	try:
 		rospy.spin()
 	except KeyboardInterrupt:
 		print("Shutting down")
+	#TODO RELEASE LOCK
+
+
+def requestLock(data):
+	global id_node, lock
+	if lock:
+		callback(data)
+	else:
+		resp = request_lock_service(id_node)
+		print(resp.ack)
+		if resp.ack:
+			print("dentro if")
+			lock = True
+			callback(data)
+		else:
+			print("fuori if")
+			rospy.loginfo("ACK FALSO ASPETTO")
+			msg_shared = rospy.wait_for_message("/lock_shared",Lock)
+			rospy.loginfo("MESSAGGIO ARRIVATO PROCEDO")
+			checkMessage(msg_shared)
+
+def checkMessage(data):
+	global id_node, lock
+	if data.id == id_node:
+		if data.msg == positive_answ:
+			lock = True
+		else:
+			lock = False
+	else:
+		msg_shared = rospy.wait_for_message("/lock_shared", Lock)
+		checkMessage(msg_shared)
+
 
 if __name__ == '__main__':
 	lane_controller()

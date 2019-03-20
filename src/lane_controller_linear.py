@@ -81,11 +81,12 @@ def setSpeed(speed1,speed2):
 def callback(data):
 
 	error = data.data
-	speed2 = 100
-	motorBalance = 10
+	speed2 = 80
+	motorBalance = 10 
 	speed1 = speed2 + motorBalance
 
-	PID = calculatePID(error,0.5,0.0005,0.005)
+#	PID = calculatePID(error,0.5,0.0005,0.005)
+	PID = calculatePID(error,0.6,0.0005,0)
 #	rospy.loginfo(error)
 
 	if error == 0:
@@ -98,12 +99,12 @@ def callback(data):
 		setSpeed(speed1,speed2-PID)
 
 	elif error == 152:
-		setSpeed(speed1,60)
-#		setSpeed(speed1,70)
+#		setSpeed(speed1,60)
+		setSpeed(speed1,70)
 
 	elif error == 153:
-		setSpeed(60,speed2)
-#		setSpeed(70,speed2)
+#		setSpeed(60,speed2)
+		setSpeed(70,speed2)
 
 	else:
 		if error == 154:

@@ -13,6 +13,7 @@ pub_image = rospy.Publisher('lane_detection_image',Image,queue_size=1)
 
 def callback(data):
 
+	rospy.loginfo("ciao")
 	# convert image to cv2 standard format
 	img = bridge.imgmsg_to_cv2(data)
 
@@ -25,7 +26,7 @@ def callback(data):
 
 	# print img.shape = (200,350,3)
 	rows,cols,channels = img.shape
-
+	
 	# ROI
 	roi_mask = np.zeros(img.shape,dtype=np.uint8)
 	roi_mask[10:rows,0:cols] = 255
@@ -45,7 +46,7 @@ def callback(data):
 	# define range of color in HSV
 	hsv = cv2.cvtColor(street,cv2.COLOR_BGR2HSV)
 
-	sensitivity = 160 # range of sensitivity=[90,150]
+	sensitivity = 120 # range of sensitivity=[90,150]
 	lower_white = np.array([0,0,255-sensitivity])
 	upper_white = np.array([255,sensitivity,255])
 
@@ -188,11 +189,9 @@ def callback(data):
 		message = 155 #no line found
 	else:
 		message = 155 #no line found
-
 	pub.publish(message)
-
-        image = bridge.cv2_to_imgmsg(img)
-	pub_image.publish(image)
+/raspicam_node/image/compressed
+	pub_image.publish(img)
 
 def lane_detection():
 	rospy.init_node('lane-detection',anonymous=True)

@@ -3,12 +3,12 @@ import roslib,rospy,sys,cv2,time
 import numpy as np
 roslib.load_manifest('lane_follower')
 from std_msgs.msg import Int32
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image
 from cv_bridge import CvBridge, CvBridgeError
 
 bridge = CvBridge()
 pub = rospy.Publisher('lane_detection', Int32, queue_size=10) #ros-lane-detection
-pub_image = rospy.Publisher('lane_detection_image',CompressedImage,queue_size=1)
+pub_image = rospy.Publisher('lane_detection_image',Image,queue_size=1)
 
 def callback(data):
 
@@ -164,7 +164,7 @@ def callback(data):
 		message = 155 #no line found
 
 	pub.publish(message)
-	image = bridge.cv2_to_compressed_imgmsg(img)
+	image = bridge.cv2_to_imgmsg(img, "bgr8")
 
 	pub_image.publish(image)
 
